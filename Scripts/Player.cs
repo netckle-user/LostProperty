@@ -16,15 +16,20 @@ public class Player : MonoBehaviour
 
     public CinemachineCamera cam;
 
+    [Range(0, 10)]
+    public float lookObjHeight;
+
     private Vector2 input;
     private float ySpeed = 0;
     private bool jumpFlag = false;
 
     private Vector2 look;
 
+    public Animator animator;
+
     public void Update()
     {
-        lookObj.position = transform.position;
+        lookObj.position = transform.position + Vector3.up * lookObjHeight;
 
         Look();
 
@@ -37,6 +42,8 @@ public class Player : MonoBehaviour
 
         if (!jumpFlag || input != Vector2.zero)
             Move(input);
+
+        animator.SetBool("isMoving", input != Vector2.zero);
     }
 
     public void FixedUpdate()
@@ -49,10 +56,14 @@ public class Player : MonoBehaviour
 
     private void Look()
     {
-        lookObj.rotation *= Quaternion.Euler(0, look.x * rotationSpeed, 0);
+        var curRot = lookObj.rotation *= Quaternion.Euler(0, look.x * rotationSpeed, 0);
+        curRot.x = Mathf.Clamp(curRot.x, -80, 80);
+        curRot.z = 0;
+        lookObj.rotation = curRot;
+        
         if (input != Vector2.zero)
         {
-            transform.rotation = Quaternion.Euler(0, lookObj.eulerAngles.y, 0);
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(getLookDirection(input)), 0.1f);
         }
     }
 
@@ -90,5 +101,13 @@ public class Player : MonoBehaviour
     {
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, Vector3.down * (controller.height / 2 + 0.1f));
+    }
+
+    Vector3 getLookDirection(Vector2 input)
+    {
+        Vector3 camForward = cam.transform.forward;
+        camForward.y = 0f;
+
+        return (camForward * input.y + cam.transform.right * input.x).normalized;
     }
 }
