@@ -22,16 +22,22 @@ public class Player : MonoBehaviour
     private Vector2 input;
     private float ySpeed = 0;
     private bool jumpFlag = false;
+    private bool isRunning = false;
 
     private Vector2 look;
 
     public Animator animator;
 
+    private void Start()
+    {
+        lookObj.rotation = Quaternion.identity;
+    }
+
     public void Update()
     {
         lookObj.position = transform.position + Vector3.up * lookObjHeight;
 
-        Look();
+
 
         ySpeed += Physics.gravity.y * Time.deltaTime;
         if (jumpFlag)
@@ -44,6 +50,12 @@ public class Player : MonoBehaviour
             Move(input);
 
         animator.SetBool("isMoving", input != Vector2.zero);
+        animator.SetBool("isRunning", isRunning);
+    }
+
+    private void LateUpdate()
+    {
+        Look();
     }
 
     public void FixedUpdate()
@@ -56,15 +68,24 @@ public class Player : MonoBehaviour
 
     private void Look()
     {
-        var curRot = lookObj.rotation *= Quaternion.Euler(0, look.x * rotationSpeed, 0);
-        curRot.x = Mathf.Clamp(curRot.x, -80, 80);
-        curRot.z = 0;
-        lookObj.rotation = curRot;
+        var curRot = lookObj.rotation.eulerAngles;
+
+        var xRot = curRot.x + look.y * rotationSpeed * Time.deltaTime; 
+        var yRot = curRot.y + look.x * rotationSpeed * Time.deltaTime;
+
+        //xRot = Mathf.Clamp(xRot, -85.0f, 85.0f);
+
+        lookObj.rotation = Quaternion.Euler(xRot, yRot, 0);
         
         if (input != Vector2.zero)
         {
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(getLookDirection(input)), 0.1f);
         }
+    }
+
+    public void OnSprint(InputValue value)
+    {
+        isRunning = value.isPressed;
     }
 
     public void OnLook(InputValue value)
